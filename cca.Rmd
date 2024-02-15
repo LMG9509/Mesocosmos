@@ -1,0 +1,73 @@
+
+---
+title: "cca"
+output:
+  pdf_document: default
+  html_document: default
+
+---
+
+```{r}
+library(readxl)
+library(dplyr)
+library(magrittr)
+CCA_R <- read_excel("Z:/Lorena.Martinez/MESOCOSMOS/Mesocosmos/CCA-R.xlsx")
+ufc_cca<-c(CCA_R$ufc)
+semanas_cca<-c(CCA_R$Date)
+condiciones_cca<-c(CCA_R$Condition)
+data_cca<-data.frame(ufc_cca,semanas_cca,condiciones_cca)
+ufc_cca_sin<-c(data_cca$ufc_cca[data_cca$condiciones_cca=="control"])
+semanas_cca_sin<-c(data_cca$semanas_cca[data_cca$condiciones_cca=="control"])
+df_cca_sin<-data.frame(ufc_cca_sin, semanas_cca_sin)
+anova_cca_sin<-aov(ufc_cca_sin~semanas_cca_sin, data = df_cca_sin)
+summary(anova_cca_sin)
+pairwise.t.test(x=df_cca_sin$ufc_cca_sin, g=df_cca_sin$semanas_cca_sin, p.adjust.method = "bonferroni", pool.sd = TRUE)
+ufc_cca_hw<-c(data_cca$ufc_cca[data_cca$condiciones_cca=="Heatwave"])
+semanas_cca_hw<-c(data_cca$semanas_cca[data_cca$condiciones_cca=="Heatwave"])
+df_cca_hw<-data.frame(ufc_cca_hw, semanas_cca_hw)
+anova_cca_hw<-aov(ufc_cca_hw~semanas_cca_hw, data = df_cca_hw)
+summary(anova_cca_hw)
+pairwise.t.test(x=df_cca_hw$ufc_cca_hw, g=df_cca_hw$semanas_cca_hw, p.adjust.method = "bonferroni", pool.sd = TRUE)
+```
+```{r}
+ufc_cca_El<-c(data_cca$ufc_cca[data_cca$condiciones_cca=="Elevated"])
+semanas_cca_El<-c(data_cca$semanas_cca[data_cca$condiciones_cca=="Elevated"])
+df_cca_El<-data.frame(ufc_cca_El, semanas_cca_El)
+anova_cca_El<-aov(ufc_cca_El~semanas_cca_El, data = df_cca_El)
+summary(anova_cca_El)
+pairwise.t.test(x=df_cca_El$ufc_cca_El, g=df_cca_El$semanas_cca_El, p.adjust.method = "bonferroni", pool.sd = TRUE)
+```
+
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+ggplot(data_cca, aes(fill=condiciones_cca, y=ufc_cca, x=semanas_cca))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("21-04-20"="04/20","21-04-27"="27/04","21-05-05"="05/05","21-05-12"="12/05","21-05-19"="19/5","21-05-26"="26/05","21-06-02"="02/06","21-06-09"="09/06","21-06-23"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")
+ggplot(data_cca, aes(fill=condiciones_cca, y=ufc_cca, x=semanas_cca))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("21-04-20"="04/20","21-04-27"="27/04","21-05-05"="05/05","21-05-12"="12/05","21-05-19"="19/5","21-05-26"="26/05","21-06-02"="02/06","21-06-09"="09/06","21-06-23"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_minimal()+scale_fill_brewer(palette="Spectral")+facet_wrap(~condiciones_cca)
+ggplot(data_cca, aes(fill=condiciones_cca, y=ufc_cca, x=semanas_cca))+geom_bar(stat = 'identity', position ="stack")+scale_x_discrete(name=expression("Semanas"), labels=c("21-04-20"="04/20","21-04-27"="27/04","21-05-05"="05/05","21-05-12"="12/05","21-05-19"="19/5","21-05-26"="26/05","21-06-02"="02/06","21-06-09"="09/06","21-06-23"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_minimal()+scale_fill_brewer(palette="Spectral")
+```
+
+
+```{r}
+ufc_control<-c(Todo$ufc[Todo$Condition=="Control"])
+semanas_control<-c(Todo$Date[Todo$Condition=="Control"])
+antibio_contro<-c(Todo$Ant[Todo$Condition=="Control"])
+df_control<-data.frame(ufc_control,semanas_control,antibio_contro)
+df_control$semanas_control<-factor(df_control$semanas_control,levels = c(unique(df_control$semanas_control)))
+ggplot(df_control, aes(fill=antibio_contro, y=ufc_control, x=semanas_control))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")
+
+ggplot(df_control, aes(fill=antibio_contro, y=ufc_control, x=semanas_control))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")
+```
+
+```{r}
+ufc_heat<-c(Todo$ufc[Todo$Condition=="Heatwave"])
+semanas_heat<-c(Todo$Date[Todo$Condition=="Heatwave"])
+antibio_heat<-c(Todo$Ant[Todo$Condition=="Heatwave"])
+df_heat<-data.frame(ufc_heat,semanas_heat,antibio_heat)
+df_heat$semanas_heat<-factor(df_heat$semanas_heat,levels = c(unique(df_heat$semanas_heat)))
+ggplot(df_heat, aes(fill=antibio_heat, y=ufc_heat, x=semanas_heat))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")
+ggplot(df_heat, aes(fill=antibio_heat, y=ufc_heat, x=semanas_heat))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")
+```
+

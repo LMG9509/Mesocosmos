@@ -1,0 +1,280 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+--
+title: "Todo"
+author: "Lorena Martínez García"
+date: "1/2/2022"
+output: html_document
+---
+
+```{r}
+library(readxl)
+Todo
+Todo<- read_excel("todotemp.xlsx", col_types = c("text","numeric", "numeric", "date", "numeric", "numeric", "text")) 
+UFC<-c(Todo$ufc)
+Condiciones<-c(Todo$Condition)
+Semanas<-as.factor(Todo$Date)
+Antibiotico<-c(Todo$Ant)
+temperatura<-c(Todo$Temp)
+datos<-data.frame(Antibiotico, UFC, Condiciones, Semanas,temperatura)
+#Media por Antibiótico
+aggregate(UFC~Antibiotico, data = datos, FUN = mean)
+#Desviación típica por Antibiótico
+aggregate(UFC~Antibiotico, data = datos, FUN = sd)
+#Media por condición
+aggregate(UFC~Condiciones, data = datos, FUN = mean)
+#Desviación típica por condición
+aggregate(UFC~Condiciones, data = datos, FUN = "sd")
+#Media por condición y antibiótico
+with(data = datos, expr = tapply(UFC, list(Antibiotico, Condiciones, Semanas), mean))
+#Desviación típica por condición y antibiótico
+with(data = datos, expr = tapply(UFC, list(Antibiotico, Condiciones, Semanas), sd))
+#Box-plot(simetría)
+library(ggplot2)
+p1<-ggplot(data = datos, mapping = aes(x=Antibiotico, y=UFC))+ geom_boxplot()+theme_bw()
+p3<-ggplot(data = datos, mapping = aes(x=Semanas, y=UFC, colour=Antibiotico))+ geom_boxplot()+theme_bw()
+p2<-ggplot(data = datos, mapping = aes(x=Semanas, y=UFC, colour=Condiciones))+ geom_boxplot()+theme_bw()
+library(gridExtra)
+grid.arrange(p1,p2, ncol=2)
+p3
+#Gráficos de interacción
+ggplot(data = datos, aes(x=Semanas, y=UFC, colour=Condiciones, group=Condiciones))+stat_summary(fun=mean, geom="point")+stat_summary(fun = mean, geom = "line")+labs(y='mean(UFC)')+theme_bw()
+ggplot(data = datos, aes(x=Semanas, y=UFC, colour=Antibiotico, group=Antibiotico))+stat_summary(fun=mean, geom="point")+stat_summary(fun = mean, geom = "line")+labs(y='mean(UFC)')+theme_bw()
+anova_pr<-aov(UFC~Semanas*Condiciones, data = datos)
+summary(anova_pr)
+TukeyHSD(anova_pr)
+anova_pr2<-aov(UFC~Semanas*Antibiotico, data = datos)
+summary(anova_pr2)
+TukeyHSD(anova_pr2)
+```
+**Control**
+```{r}
+#Sin antbiótico
+ufc<-c(Todo$ufc[Todo$Condition=="Control"&Todo$Ant=="Sin"])
+Todo$Date<-as.factor(Todo$Date)
+Semanas_sin<-c(Todo$Date[Todo$Condition=="Control"&Todo$Ant=="Sin"])
+temp_sin<-c(Todo$Temp[Todo$Condition=="Control"&Todo$Ant=="Sin"])
+df_sin<-data.frame(ufc, Semanas_sin,temp_sin)
+df_sin$Semanas_sin<-factor(df_sin$Semanas_sin,levels = c(unique(df_sin$Semanas_sin)))
+df_sin$temp_sin<-factor(df_sin$temp_sin,levels=c(unique(df_sin$temp_sin)))
+#Realizamos el test no paramétrico
+anova_sin<-aov(ufc~Semanas_sin, data = df_sin)
+summary(anova_sin)
+pairwise.t.test(x=df_sin$ufc, g=df_sin$Semanas_sin, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Ceftazidime
+ufc_cefta<-c(Todo$ufc[Todo$Condition=="Control"&Todo$Ant=="cefta"])
+Semanas_cefta<-c(Todo$Date[Todo$Condition=="Control"&Todo$Ant=="cefta"])
+temp_cefta<-c(Todo$Temp[Todo$Condition=="Control"&Todo$Ant=="cefta"])
+df_cefta<-data.frame(ufc_cefta, Semanas_cefta,temp_cefta)
+df_cefta$Semanas_cefta<-factor(df_cefta$Semanas_cefta,levels = c(unique(df_cefta$Semanas_cefta)))
+df_cefta$temp_cefta<-factor(df_cefta$temp_cefta,levels=c(unique(df_cefta$temp_cefta)))
+#Realizamos el test no paramétrico
+anova_cefta<-aov(ufc_cefta~Semanas_cefta, data = df_cefta)
+summary(anova_cefta)
+pairwise.t.test(x=df_cefta$ufc_cefta, g=df_cefta$Semanas_cefta, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Cipro
+ufc_cipro<-c(Todo$ufc[Todo$Condition=="Control"&Todo$Ant=="cipro"])
+Semanas_cipro<-c(Todo$Date[Todo$Condition=="Control"&Todo$Ant=="cipro"])
+temp_cipro<-c(Todo$Temp[Todo$Condition=="Control"&Todo$Ant=="cipro"])
+df_cipro<-data.frame(ufc_cipro, Semanas_cipro,temp_cipro)
+df_cipro$Semanas_cipro<-factor(df_cipro$Semanas_cipro,levels = c(unique(df_cipro$Semanas_cipro)))
+df_cipro$temp_cipro<-factor(df_cipro$temp_cipro,levels=c(unique(df_cipro$temp_cipro)))
+#Realizamos el test no paramétrico
+anova_cipro<-aov(ufc_cipro~Semanas_cipro, data = df_cipro)
+summary(anova_cipro)
+pairwise.t.test(x=df_cipro$ufc_cipro, g=df_cipro$Semanas_cipro, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Semanas sin
+ggplot(df_sin, aes(y=ufc, x=Semanas_sin))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Control-Sin")
+#Temp sin
+ggplot(df_sin, aes(y=ufc, x=temp_sin))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Control-Sin")
+#Semanas cefta
+ggplot(df_cefta, aes(y=ufc_cefta, x=Semanas_cefta))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Control-Cefta")
+#temp cefta
+ggplot(df_cefta, aes(y=ufc_cefta, x=temp_cefta))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Control-Cefta")
+#Semanas cipro
+ggplot(df_cipro, aes(y=ufc_cipro, x=Semanas_cipro))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Control-Cipro")
+
+#Temp cipro
+ggplot(df_cipro, aes(y=ufc_cipro, x=temp_cipro))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Control-Cipro")
+```
+**Heatwave**
+```{r}
+#Sin antbiótico
+ufc_hw<-c(Todo$ufc[Todo$Condition=="Heatwave"&Todo$Ant=="Sin"])
+Semanas_hw<-c(Todo$Date[Todo$Condition=="Heatwave"&Todo$Ant=="Sin"])
+temp_hw<-c(Todo$Temp[Todo$Condition=="Heatwave"&Todo$Ant=="Sin"])
+df_hw<-data.frame(ufc_hw, Semanas_hw,temp_hw)
+df_hw$Semanas_hw<-factor(df_hw$Semanas_hw,levels = c(unique(df_hw$Semanas_hw)))
+df_hw$temp_hw<-factor(df_hw$temp_hw,levels=c(unique(df_hw$temp_hw)))
+#Realizamos el test no paramétrico
+anova_hw<-aov(ufc_hw~Semanas_hw, data = df_hw)
+summary(anova_hw)
+pairwise.t.test(x=df_hw$ufc_hw, g=df_hw$Semanas_hw, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Ceftazidime
+ufc_ceftahw<-c(Todo$ufc[Todo$Condition=="Heatwave"&Todo$Ant=="cefta"])
+Semanas_ceftahw<-c(Todo$Date[Todo$Condition=="Heatwave"&Todo$Ant=="cefta"])
+temp_hwcef<-c(Todo$Temp[Todo$Condition=="Heatwave"&Todo$Ant=="cefta"])
+df_ceftahw<-data.frame(ufc_ceftahw, Semanas_ceftahw,temp_hwcef)
+df_ceftahw$Semanas_ceftahw<-factor(df_ceftahw$Semanas_ceftahw,levels = c(unique(df_ceftahw$Semanas_ceftahw)))
+df_ceftahw$temp_hwcef<-factor(df_ceftahw$temp_hwcef,levels=c(unique(df_ceftahw$temp_hwcef)))
+#Realizamos el test no paramétrico
+anova_ceftahw<-aov(ufc_ceftahw~Semanas_ceftahw, data = df_ceftahw)
+summary(anova_ceftahw)
+pairwise.t.test(x=df_ceftahw$ufc_ceftahw, g=df_ceftahw$Semanas_ceftahw, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Cipro
+ufc_ciprohw<-c(Todo$ufc[Todo$Condition=="Heatwave"&Todo$Ant=="cipro"])
+Semanas_ciprohw<-c(Todo$Date[Todo$Condition=="Heatwave"&Todo$Ant=="cipro"])
+temp_hwci<-c(Todo$Temp[Todo$Condition=="Heatwave"&Todo$Ant=="cipro"])
+df_ciprohw<-data.frame(ufc_ciprohw, Semanas_ciprohw,temp_hwci)
+df_ciprohw$Semanas_ciprohw<-factor(df_ciprohw$Semanas_ciprohw,levels = c(unique(df_ciprohw$Semanas_ciprohw)))
+df_ciprohw$temp_hwci<-factor(df_ciprohw$temp_hwci,levels=c(unique(df_ciprohw$temp_hwci)))
+#Realizamos el test no paramétrico
+anova_ciprohw<-aov(ufc_ciprohw~Semanas_ciprohw, data = df_ciprohw)
+summary(anova_ciprohw)
+pairwise.t.test(x=df_ciprohw$ufc_ciprohw, g=df_ciprohw$Semanas_ciprohw, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Semanas hw sin
+ggplot(df_hw, aes(y=ufc_hw, x=Semanas_hw))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("HW-Sin")
+#Temp hw sin
+ggplot(df_hw, aes(y=ufc_hw, x=temp_hw))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("HW-Sin")
+#Semanas hw cefta
+
+ggplot(df_ceftahw, aes(y=ufc_ceftahw, x=Semanas_ceftahw))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("HW-Cefta")
+
+#Temp hw cefta
+ggplot(df_ceftahw, aes(y=ufc_ceftahw, x=temp_hwcef))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("HW-Cefta")
+#Semanas hw cipra
+ggplot(df_ciprohw, aes(y=ufc_ciprohw, x=Semanas_ciprohw))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("HW-Cipro")
+#Temp cipro hw
+ggplot(df_ciprohw, aes(y=ufc_ciprohw, x=temp_hwci))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("HW-Cipro")
+```
+
+**Elevated**
+```{r}
+#Sin antbiótico
+ufc_ele<-c(Todo$ufc[Todo$Condition=="Elevated"&Todo$Ant=="Sin"])
+Semanas_ele<-c(Todo$Date[Todo$Condition=="Elevated"&Todo$Ant=="Sin"])
+temp_ele<-c(Todo$Temp[Todo$Condition=="Elevated"&Todo$Ant=="Sin"])
+df_ele<-data.frame(ufc_ele, Semanas_ele,temp_ele)
+df_ele$Semanas_ele<-factor(df_ele$Semanas_ele,levels = c(unique(df_ele$Semanas_ele)))
+df_ele$temp_ele<-factor(df_ele$temp_ele,levels=c(unique(df_ele$temp_ele)))
+#Realizamos el test no paramétrico
+anova_ele<-aov(ufc_ele~Semanas_ele, data = df_ele)
+summary(anova_ele)
+pairwise.t.test(x=df_ele$ufc_ele, g=df_ele$Semanas_ele, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+#Ceftazidime
+ufc_ceftaele<-c(Todo$ufc[Todo$Condition=="Elevated"&Todo$Ant=="cefta"])
+Semanas_ceftaele<-c(Todo$Date[Todo$Condition=="Elevated"&Todo$Ant=="cefta"])
+temp_ceftaele<-c(Todo$Temp[Todo$Condition=="Elevated"&Todo$Ant=="cefta"])
+df_ceftaele<-data.frame(ufc_ceftaele, Semanas_ceftaele,temp_ceftaele)
+df_ceftaele$Semanas_ceftaele<-factor(df_ceftaele$Semanas_ceftaele,levels = c(unique(df_ceftaele$Semanas_ceftaele)))
+df_ceftaele$temp_ceftaele<-factor(df_ceftaele$temp_ceftaele,levels=c(unique(df_ceftaele$temp_ceftaele)))
+#Realizamos el test no paramétrico
+anova_ceftaele<-aov(ufc_ceftaele~Semanas_ceftaele, data = df_ceftaele)
+summary(anova_ceftaele)
+pairwise.t.test(x=df_ceftaele$ufc_ceftaele, g=df_ceftaele$Semanas_ceftaele, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+
+
+#Cipro
+ufc_ciproele<-c(Todo$ufc[Todo$Condition=="Elevated"&Todo$Ant=="cipro"])
+Semanas_ciproele<-c(Todo$Date[Todo$Condition=="Elevated"&Todo$Ant=="cipro"])
+temp_ciproele<-c(Todo$Temp[Todo$Condition=="Elevated"&Todo$Ant=="cipro"])
+df_ciproele<-data.frame(ufc_ciproele, Semanas_ciproele,temp_ciproele)
+df_ciproele$Semanas_ciproele<-factor(df_ciproele$Semanas_ciproele,levels = c(unique(df_ciproele$Semanas_ciproele)))
+df_ciproele$temp_ciproele<-factor(df_ciproele$temp_ciproele, levels=c(unique(df_ciproele$temp_ciproele)))
+#Realizamos el test no paramétrico
+anova_ciproele<-aov(ufc_ciproele~Semanas_ciproele, data = df_ciproele)
+summary(anova_ciproele)
+pairwise.t.test(x=df_ciproele$ufc_ciproele, g=df_ciproele$Semanas_ciproele, p.adjust.method = "bonferroni", pool.sd=TRUE, alternative="two.sided")
+
+#Gráficas
+#semanas elevated sin
+ggplot(df_ele, aes(y=ufc_ele, x=Semanas_ele))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Elevated-sin")
+#temperatura elevated sin
+ggplot(df_ele, aes(y=ufc_ele, x=temp_ele))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Elevated-sin")
+#Semanas elevated cefta
+ ggplot(df_ceftaele, aes(y=ufc_ceftaele, x=Semanas_ceftaele))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Elevated-Cefta")
+#temperatura elevated cefta
+ggplot(df_ceftaele, aes(y=ufc_ceftaele, x=temp_ceftaele))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Elevated-Cefta")
+#semanas elevated cipro
+ggplot(df_ciproele, aes(y=ufc_ciproele, x=Semanas_ciproele))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Elevated-Cipro")
+#temperatura elevated cipro
+ggplot(df_ciproele, aes(y=ufc_ciproele, x=temp_ciproele))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Temperatura ºC"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+ggtitle("Elevated-Cipro")
+```
+
+
+
+```{r}
+ufc_control<-c(Todo$ufc[Todo$Condition=="Control"])
+semanas_control<-c(Todo$Date[Todo$Condition=="Control"])
+antibio_contro<-c(Todo$Ant[Todo$Condition=="Control"])
+df_control<-data.frame(ufc_control,semanas_control,antibio_contro)
+df_control$semanas_control<-factor(df_control$semanas_control,levels = c(unique(df_control$semanas_control)))
+ggplot(df_control, aes(fill=antibio_contro, y=ufc_control, x=semanas_control))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Control")
+ggplot(df_control, aes(fill=antibio_contro, y=ufc_control, x=semanas_control))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Control")
+```
+
+
+
+
+```{r}
+ufc_heat<-c(Todo$ufc[Todo$Condition=="Heatwave"])
+semanas_heat<-c(Todo$Date[Todo$Condition=="Heatwave"])
+antibio_heat<-c(Todo$Ant[Todo$Condition=="Heatwave"])
+df_heat<-data.frame(ufc_heat,semanas_heat,antibio_heat)
+df_heat$semanas_heat<-factor(df_heat$semanas_heat,levels = c(unique(df_heat$semanas_heat)))
+ggplot(df_heat, aes(fill=antibio_heat, y=ufc_heat, x=semanas_heat))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Heatwave")
+ggplot(df_heat, aes(fill=antibio_heat, y=ufc_heat, x=semanas_heat))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Heatwave")
+```
+
+
+```{r}
+ufc_elev<-c(Todo$ufc[Todo$Condition=="Elevated"])
+semanas_elev<-c(Todo$Date[Todo$Condition=="Elevated"])
+antibio_elev<-c(Todo$Ant[Todo$Condition=="Elevated"])
+temp_elev<-c(Todo$Temp[Todo$Condition=="Elevated"])
+df_elev<-data.frame(ufc_elev,semanas_elev,antibio_elev,temp_elev)
+df_elev$temp_elev<-factor(df_elev$temp_elev,levels = c(unique(df_elev$temp_elev)))
+df_elev$semanas_elev<-factor(df_elev$semanas_elev,levels = c(unique(df_elev$semanas_elev)))
+ggplot(df_elev, aes(fill=antibio_elev, y=ufc_elev, x=semanas_elev))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Elevated")
+ggplot(df_elev, aes(fill=antibio_elev, y=ufc_elev, x=semanas_elev))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Elevated")
+ggplot(df_elev, aes(fill=antibio_elev, y=ufc_elev, x=temp_elev))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Elevated")
+```
+
+```{r}
+ufc_prueba<-c(Todo$ufc[Todo$Ant=="Sin"])
+semanas_prueb<-as.factor(c(Todo$Date[Todo$Ant=="Sin"]))
+condiciones<-c(Todo$Condition[Todo$Ant=="Sin"])
+temp_prueb<-c(Todo$Temp[Todo$Ant=="Sin"])
+df_prueb<-data.frame(ufc_prueba,semanas_prueb,condiciones,temp_prueb)
+df_prueb$semanas_prueb<-factor(df_prueb$semanas_prueb,levels = c(unique(df_prueb$semanas_prueb)))
+df_prueb$temp_prueb<-factor(df_prueb$temp_prueb,levels = c(unique(df_prueb$temp_prueb)))
+ggplot(df_prueb, aes(fill=cond_prueb, y=ufc_prueba, x=semanas_prueb))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("R2A_Sin antibiótico")
+ggplot(df_prueb, aes(fill=condiciones, y=ufc_prueba, x=semanas_prueb))+stat_summary(geom="bar",fun=mean,position = "dodge")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("R2A Sin antibiótico")+stat_summary(geom="errorbar",fun.data = mean_se,position = "dodge")
+ggplot(df_prueb, aes(fill=cond_prueb, y=ufc_prueba, x=semanas_prueb))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Sin")
+```
+
+```{r}
+ufc_cf<-c(Todo$ufc[Todo$Ant=="cefta"])
+semanas_cf<-as.factor(c(Todo$Date[Todo$Ant=="cefta"]))
+condiciones<-c(Todo$Condition[Todo$Ant=="cefta"])
+df_cf<-data.frame(ufc_cf,semanas_cf,cond_cf)
+df_cf$semanas_cf<-factor(df_cf$semanas_cf,levels = c(unique(df_cf$semanas_cf)))
+ggplot(df_cf, aes(fill=cond_cf, y=ufc_cf, x=semanas_cf))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Ceftazidime")
+ggplot(df_cf, aes(fill=cond_cf, y=ufc_cf, x=semanas_cf))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Ceftazidime")
+ggplot(df_cf, aes(fill=condiciones, y=ufc_cf, x=semanas_cf))+stat_summary(geom="bar",fun=mean,position = "dodge")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Set2")+ggtitle("R2A Ceftazidime")+stat_summary(geom="errorbar",fun.data = mean_se,position = "dodge")+theme(plot.title = element_text(color = "black",size=14,face="bold"))
+```
+
+```{r}
+ufc_ci<-c(Todo$ufc[Todo$Ant=="cipro"])
+semanas_ci<-as.factor(c(Todo$Date[Todo$Ant=="cipro"]))
+condiciones<-c(Todo$Condition[Todo$Ant=="cipro"])
+df_ci<-data.frame(ufc_ci,semanas_ci,cond_ci)
+df_ci$semanas_ci<-factor(df_ci$semanas_ci,levels = c(unique(df_ci$semanas_ci)))
+ggplot(df_ci, aes(fill=cond_ci, y=ufc_ci, x=semanas_ci))+geom_bar(stat = 'identity', position = position_dodge())+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Ciprofloxacina")
+ggplot(df_ci, aes(fill=cond_ci, y=ufc_ci, x=semanas_ci))+geom_bar(stat = 'identity', position = "stack")+scale_x_discrete(name=expression("Semanas"), labels=c("20/04/2021"="20/04","27/04/2021"="27/04","04/05/2021"="05/05","11/05/2021"="12/05","18/05/2021"="19/5","25/05/2021"="26/05","01/06/2021"="02/06","08/06/2021"="09/06","22/06/2021"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Spectral")+ggtitle("Ciprofloxacina")
+ggplot(df_ci, aes(fill=condiciones, y=ufc_ci, x=semanas_ci))+stat_summary(geom="bar",fun=mean,position = "dodge")+scale_x_discrete(name=expression("Semanas"), labels=c("2021-04-20"="20/04","2021-04-27"="27/04","2021-05-04"="05/05","2021-05-11"="12/05","2021-05-18"="19/5","2021-05-25"="26/05","2021-06-01"="02/06","2021-06-08"="09/06","2021-06-22"="23/06"))+scale_y_continuous(name="ufc/100ml")+theme_classic()+scale_fill_brewer(palette="Set2")+ggtitle("R2A Ciprofloxacina")+stat_summary(geom="errorbar",fun.data = mean_se,position = "dodge")+theme(plot.title = element_text(color = "black",size=14,face="bold"))
+```
+
